@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Mail, Lock, User, Gift } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Gift } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,28 +16,46 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
+  const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     referralCode: ''
   });
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      if (activeTab === 'login') {
+        await login(formData.email, formData.password);
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          setErrors({ confirmPassword: 'Passwords do not match' });
+          return;
+        }
+        await register(formData.email, formData.password, formData.referralCode || undefined);
+      }
       onSuccess();
-    }, 1000);
+    } catch (error: any) {
+      setErrors({ general: error.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -48,7 +67,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
           </DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
@@ -64,6 +83,10 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {errors.general && (
+                    <div className="text-red-600 text-sm">{errors.general}</div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
@@ -112,12 +135,6 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                   >
                     {isLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
-                  
-                  <div className="text-center">
-                    <Button variant="link" className="text-sm">
-                      Forgot password?
-                    </Button>
-                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -133,6 +150,10 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {errors.general && (
+                    <div className="text-red-600 text-sm">{errors.general}</div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
                     <div className="relative">
@@ -188,6 +209,9 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                         required
                       />
                     </div>
+                    {errors.confirmPassword && (
+                      <div className="text-red-600 text-sm">{errors.confirmPassword}</div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">

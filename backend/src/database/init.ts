@@ -23,6 +23,7 @@ export async function initDatabase() {
       password_hash TEXT NOT NULL,
       referral_code TEXT UNIQUE NOT NULL,
       referred_by INTEGER,
+      blocked BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (referred_by) REFERENCES users (id)
     )
@@ -54,6 +55,7 @@ export async function initDatabase() {
       end_date DATETIME,
       initial_payment_deadline DATETIME,
       full_payment_deadline DATETIME,
+      last_return_processed DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id),
       FOREIGN KEY (package_id) REFERENCES investment_packages (id)

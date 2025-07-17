@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -12,6 +11,7 @@ import investmentRoutes from './routes/investments';
 import referralRoutes from './routes/referrals';
 import walletRoutes from './routes/wallet';
 import notificationRoutes from './routes/notifications';
+import adminRoutes from './routes/admin';
 import { processInvestmentReturns, checkPaymentDeadlines } from './services/cronJobs';
 
 dotenv.config();
@@ -43,6 +43,7 @@ app.use('/api/investments', investmentRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,14 +1,10 @@
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-domain.com/api' 
-  : 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 class ApiClient {
-  private baseUrl: string;
   private token: string | null = null;
 
   constructor() {
-    this.baseUrl = API_BASE_URL;
     this.token = localStorage.getItem('authToken');
   }
 
@@ -23,7 +19,7 @@ class ApiClient {
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
@@ -36,89 +32,90 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      const error = await response.json().catch(() => ({ message: 'Network error' }));
       throw new Error(error.message || 'Request failed');
     }
 
     return response.json();
   }
 
-  // Auth endpoints
-  async login(email: string, password: string) {
-    return this.request('/auth/login', {
+  async get(endpoint: string) {
+    return this.request(endpoint);
+  }
+
+  async post(endpoint: string, data?: any) {
+    return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: data ? JSON.stringify(data) : undefined,
     });
+  }
+
+  async patch(endpoint: string, data?: any) {
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  // Auth methods
+  async login(email: string, password: string) {
+    return this.post('/api/auth/login', { email, password });
   }
 
   async register(email: string, password: string, referralCode?: string) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, referralCode }),
-    });
+    return this.post('/api/auth/register', { email, password, referralCode });
   }
 
   async getProfile() {
-    return this.request('/auth/profile');
+    return this.get('/api/auth/profile');
   }
 
-  // Investment endpoints
+  // Investment methods
   async getInvestmentPackages() {
-    return this.request('/investments/packages');
+    return this.get('/api/investments/packages');
   }
 
-  async createInvestment(packageId: number, paymentType: 'pay_now' | 'pay_later') {
-    return this.request('/investments', {
-      method: 'POST',
-      body: JSON.stringify({ packageId, paymentType }),
-    });
+  async createInvestment(packageId: number, paymentType: string) {
+    return this.post('/api/investments', { packageId, paymentType });
   }
 
   async getUserInvestments() {
-    return this.request('/investments/user');
+    return this.get('/api/investments/user');
   }
 
-  async makePayment(investmentId: number, amount: number, usePoints?: boolean) {
-    return this.request('/investments/payment', {
-      method: 'POST',
-      body: JSON.stringify({ investmentId, amount, usePoints }),
-    });
+  async makePayment(investmentId: number, amount: number, usePoints: boolean = false) {
+    return this.post('/api/investments/payment', { investmentId, amount, usePoints });
   }
 
-  // Referral endpoints
-  async getReferralData() {
-    return this.request('/referrals');
-  }
-
-  async getMilestones() {
-    return this.request('/referrals/milestones');
-  }
-
-  // Wallet endpoints
-  async getWalletData() {
-    return this.request('/wallet');
+  // Wallet methods
+  async getWallet() {
+    return this.get('/api/wallet');
   }
 
   async getTransactions() {
-    return this.request('/wallet/transactions');
+    return this.get('/api/wallet/transactions');
   }
 
-  async withdrawFunds(amount: number, method: string) {
-    return this.request('/wallet/withdraw', {
-      method: 'POST',
-      body: JSON.stringify({ amount, method }),
-    });
+  async withdraw(amount: number, method: string) {
+    return this.post('/api/wallet/withdraw', { amount, method });
   }
 
-  // Notifications
+  // Referral methods
+  async getReferrals() {
+    return this.get('/api/referrals');
+  }
+
+  async getReferralStats() {
+    return this.get('/api/referrals/stats');
+  }
+
+  // Notification methods
   async getNotifications() {
-    return this.request('/notifications');
+    return this.get('/api/notifications');
   }
 
-  async markNotificationRead(notificationId: number) {
-    return this.request(`/notifications/${notificationId}/read`, {
-      method: 'PATCH',
-    });
+  async markNotificationRead(id: number) {
+    return this.patch(`/api/notifications/${id}/read`);
   }
 }
 

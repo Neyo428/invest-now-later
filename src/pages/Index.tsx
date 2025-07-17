@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,57 +25,60 @@ import { WalletComponent } from '@/components/wallet/WalletComponent';
 import { TimerComponent } from '@/components/timers/TimerComponent';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/lib/api';
+import { toast } from 'sonner';
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, logout, isLoading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [walletData, setWalletData] = useState(null);
+  const [investmentsData, setInvestmentsData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock user data
-  const userData = {
-    walletBalance: 1250.50,
-    totalInvestments: 2500,
-    classAEarnings: 175,
-    classBEarnings: 40,
-    classCEarnings: 12,
-    referralCode: 'INV-789ABC',
-    points: 12.5,
-    activeInvestments: [
-      {
-        id: 1,
-        package: 'R1000',
-        type: 'Pay Now',
-        progress: 65,
-        daysRemaining: 11,
-        dailyReturn: 150,
-        totalReturn: 975
-      },
-      {
-        id: 2,
-        package: 'R500',
-        type: 'Pay Later',
-        progress: 20,
-        daysRemaining: 24,
-        dailyReturn: 75,
-        totalReturn: 150,
-        pendingPayment: 400,
-        paymentDeadline: '2 days'
-      }
-    ],
-    milestoneProgress: {
-      currentTier: 'B',
-      classAReferrals: 12,
-      nextTierRequirement: 15,
-      rewardEarned: 250
+  useEffect(() => {
+    if (user && !isLoading) {
+      fetchUserData();
+    } else if (!isLoading) {
+      setLoading(false);
+    }
+  }, [user, isLoading]);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const [wallet, investments] = await Promise.all([
+        apiClient.getWallet(),
+        apiClient.getUserInvestments()
+      ]);
+      setWalletData(wallet);
+      setInvestmentsData(investments);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      toast.error('Failed to load user data');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAuth = () => {
-    setIsLoggedIn(true);
     setShowAuthModal(false);
+    fetchUserData();
   };
 
-  if (!isLoggedIn) {
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="container mx-auto px-4 py-8">
@@ -142,6 +145,28 @@ const Index = () => {
     );
   }
 
+  const calculateProgress = (investment) => {
+    if (!investment.start_date) return 0;
+    const startDate = new Date(investment.start_date);
+    const now = new Date();
+    const totalDuration = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+    const elapsed = now.getTime() - startDate.getTime();
+    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+  };
+
+  const calculateTimeRemaining = (investment) => {
+    if (!investment.start_date) return 'Not started';
+    const startDate = new Date(investment.start_date);
+    const endDate = new Date(startDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+    const now = new Date();
+    const remaining = endDate.getTime() - now.getTime();
+    
+    if (remaining <= 0) return 'Completed';
+    
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    return `${days} days remaining`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -149,10 +174,11 @@ const Index = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Investment Dashboard</h1>
             <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">Welcome, {user.email}</span>
               <NotificationCenter />
               <Button 
                 variant="outline" 
-                onClick={() => setIsLoggedIn(false)}
+                onClick={logout}
                 className="text-gray-600 hover:text-gray-900"
               >
                 Logout
@@ -180,7 +206,7 @@ const Index = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-100">Wallet Balance</p>
-                      <p className="text-2xl font-bold">R{userData.walletBalance.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">R{walletData ? (walletData.balance / 100).toFixed(2) : '0.00'}</p>
                     </div>
                     <Wallet className="h-8 w-8 text-green-100" />
                   </div>
@@ -191,8 +217,8 @@ const Index = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100">Total Investments</p>
-                      <p className="text-2xl font-bold">R{userData.totalInvestments}</p>
+                      <p className="text-blue-100">Active Investments</p>
+                      <p className="text-2xl font-bold">{investmentsData.filter(inv => inv.status === 'active').length}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-blue-100" />
                   </div>
@@ -204,7 +230,7 @@ const Index = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-purple-100">Points</p>
-                      <p className="text-2xl font-bold">{userData.points}</p>
+                      <p className="text-2xl font-bold">{walletData ? walletData.points.toFixed(1) : '0.0'}</p>
                     </div>
                     <Target className="h-8 w-8 text-purple-100" />
                   </div>
@@ -215,8 +241,8 @@ const Index = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-100">Referral Earnings</p>
-                      <p className="text-2xl font-bold">R{userData.classAEarnings + userData.classBEarnings + userData.classCEarnings}</p>
+                      <p className="text-orange-100">Referral Code</p>
+                      <p className="text-xl font-bold">{user.referralCode}</p>
                     </div>
                     <Users className="h-8 w-8 text-orange-100" />
                   </div>
@@ -234,72 +260,63 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {userData.activeInvestments.map((investment) => (
-                    <div key={investment.id} className="border rounded-lg p-4 bg-gray-50">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-semibold">{investment.package} Package</h3>
-                          <Badge variant={investment.type === 'Pay Now' ? 'default' : 'secondary'}>
-                            {investment.type}
-                          </Badge>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">Daily Return</p>
-                          <p className="font-semibold text-green-600">R{investment.dailyReturn}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span>{investment.progress}% • {investment.daysRemaining} days left</span>
-                        </div>
-                        <Progress value={investment.progress} className="h-2" />
-                        
-                        {investment.pendingPayment && (
-                          <div className="flex items-center gap-2 text-amber-600 text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <span>Pending payment: R{investment.pendingPayment} (Due in {investment.paymentDeadline})</span>
+                  {investmentsData.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No investments yet. Start investing to see your portfolio here!</p>
+                  ) : (
+                    investmentsData.map((investment) => (
+                      <div key={investment.id} className="border rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="font-semibold">R{(investment.amount_invested / 100).toFixed(0)} Package</h3>
+                            <Badge variant={investment.payment_type === 'pay_now' ? 'default' : 'secondary'}>
+                              {investment.payment_type === 'pay_now' ? 'Pay Now' : 'Pay Later'}
+                            </Badge>
+                            <Badge variant={investment.status === 'active' ? 'default' : 'secondary'} className="ml-2">
+                              {investment.status}
+                            </Badge>
                           </div>
-                        )}
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">Daily Return</p>
+                            <p className="font-semibold text-green-600">R{(investment.daily_return / 100).toFixed(0)}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Progress</span>
+                            <span>{calculateProgress(investment).toFixed(0)}% • {calculateTimeRemaining(investment)}</span>
+                          </div>
+                          <Progress value={calculateProgress(investment)} className="h-2" />
+                          
+                          {investment.payment_type === 'pay_later' && investment.amount_paid < investment.amount_invested && (
+                            <div className="flex items-center gap-2 text-amber-600 text-sm">
+                              <AlertCircle className="h-4 w-4" />
+                              <span>Pending payment: R{((investment.amount_invested - investment.amount_paid) / 100).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Timers */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <TimerComponent 
-                title="Pay Later Deadline"
-                timeRemaining="2:15:30"
-                type="warning"
-                description="Complete your R400 payment for R500 package"
-              />
-              <TimerComponent 
-                title="Investment Maturity"
-                timeRemaining="10:23:45:12"
-                type="success"
-                description="R1000 package completing in 11 days"
-              />
-            </div>
           </TabsContent>
 
           <TabsContent value="packages">
-            <InvestmentPackages />
+            <InvestmentPackages onInvestmentCreated={fetchUserData} />
           </TabsContent>
 
           <TabsContent value="referrals">
-            <ReferralSystem userData={userData} />
+            <ReferralSystem user={user} />
           </TabsContent>
 
           <TabsContent value="milestones">
-            <AffiliateMilestones userData={userData} />
+            <AffiliateMilestones user={user} />
           </TabsContent>
 
           <TabsContent value="wallet">
-            <WalletComponent userData={userData} />
+            <WalletComponent walletData={walletData} onTransactionComplete={fetchUserData} />
           </TabsContent>
         </Tabs>
       </div>
