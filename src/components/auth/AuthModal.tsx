@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,12 @@ interface AuthModalProps {
   onSuccess: () => void;
 }
 
+interface FormErrors {
+  general?: string;
+  confirmPassword?: string;
+  [key: string]: string | undefined;
+}
+
 export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
   const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +31,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
     confirmPassword: '',
     referralCode: ''
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

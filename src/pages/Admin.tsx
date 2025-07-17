@@ -19,11 +19,24 @@ import {
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 
+interface AdminStats {
+  totalUsers?: number;
+  totalInvestments?: number;
+  activeInvestments?: number;
+  pendingPayments?: number;
+  totalRevenue?: number;
+  totalWithdrawals?: number;
+  pendingPaymentAmount?: number;
+  activeUsers?: number;
+  blockedUsers?: number;
+  usersWithInvestments?: number;
+}
+
 const Admin = () => {
   const [users, setUsers] = useState([]);
   const [investments, setInvestments] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [stats, setStats] = useState({});
+  const [stats, setStats] = useState<AdminStats>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +66,7 @@ const Admin = () => {
     }
   };
 
-  const handleBlockUser = async (userId) => {
+  const handleBlockUser = async (userId: number) => {
     try {
       await apiClient.post(`/api/admin/users/${userId}/block`);
       toast.success('User blocked successfully');
@@ -63,7 +76,7 @@ const Admin = () => {
     }
   };
 
-  const handleUnblockUser = async (userId) => {
+  const handleUnblockUser = async (userId: number) => {
     try {
       await apiClient.post(`/api/admin/users/${userId}/unblock`);
       toast.success('User unblocked successfully');
@@ -73,7 +86,7 @@ const Admin = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter((user: any) => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.referral_code.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -186,7 +199,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredUsers.map((user) => (
+                  {filteredUsers.map((user: any) => (
                     <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center gap-4">
@@ -239,7 +252,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {investments.map((investment) => (
+                  {investments.map((investment: any) => (
                     <div key={investment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center gap-4">
@@ -276,7 +289,7 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {transactions.map((transaction) => (
+                  {transactions.map((transaction: any) => (
                     <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center gap-4">

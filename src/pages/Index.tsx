@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +144,7 @@ const Index = () => {
     );
   }
 
-  const calculateProgress = (investment) => {
+  const calculateProgress = (investment: any) => {
     if (!investment.start_date) return 0;
     const startDate = new Date(investment.start_date);
     const now = new Date();
@@ -154,7 +153,7 @@ const Index = () => {
     return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
   };
 
-  const calculateTimeRemaining = (investment) => {
+  const calculateTimeRemaining = (investment: any) => {
     if (!investment.start_date) return 'Not started';
     const startDate = new Date(investment.start_date);
     const endDate = new Date(startDate.getTime() + (30 * 24 * 60 * 60 * 1000));
@@ -218,7 +217,7 @@ const Index = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-100">Active Investments</p>
-                      <p className="text-2xl font-bold">{investmentsData.filter(inv => inv.status === 'active').length}</p>
+                      <p className="text-2xl font-bold">{investmentsData.filter((inv: any) => inv.status === 'active').length}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-blue-100" />
                   </div>
@@ -263,7 +262,7 @@ const Index = () => {
                   {investmentsData.length === 0 ? (
                     <p className="text-center text-gray-500 py-8">No investments yet. Start investing to see your portfolio here!</p>
                   ) : (
-                    investmentsData.map((investment) => (
+                    investmentsData.map((investment: any) => (
                       <div key={investment.id} className="border rounded-lg p-4 bg-gray-50">
                         <div className="flex justify-between items-start mb-3">
                           <div>
@@ -304,15 +303,15 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="packages">
-            <InvestmentPackages onInvestmentCreated={fetchUserData} />
+            <InvestmentPackages />
           </TabsContent>
 
           <TabsContent value="referrals">
-            <ReferralSystem user={user} />
+            <ReferralSystem />
           </TabsContent>
 
           <TabsContent value="milestones">
-            <AffiliateMilestones user={user} />
+            <AffiliateMilestones />
           </TabsContent>
 
           <TabsContent value="wallet">

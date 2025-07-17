@@ -23,29 +23,14 @@ import {
 import { toast } from 'sonner';
 
 interface WalletComponentProps {
-  userData: any;
+  walletData: any;
+  onTransactionComplete: () => void;
 }
 
-export const WalletComponent = ({ userData }: WalletComponentProps) => {
+export const WalletComponent = ({ walletData, onTransactionComplete }: WalletComponentProps) => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('bank');
-
-  const walletData = {
-    balance: userData.walletBalance,
-    points: userData.points,
-    pointsValue: userData.points * 20, // 1 point = R20
-    pendingWithdrawals: 0,
-    totalWithdrawn: 850,
-    transactions: [
-      { id: 1, type: 'bonus', amount: 35, description: 'Referral bonus from John Doe', date: '2024-01-20', status: 'completed' },
-      { id: 2, type: 'cashback', amount: 50, description: 'Cashback from R500 investment', date: '2024-01-19', status: 'completed' },
-      { id: 3, type: 'withdrawal', amount: -200, description: 'Bank withdrawal', date: '2024-01-18', status: 'completed' },
-      { id: 4, type: 'bonus', amount: 70, description: 'Referral bonus from Jane Smith', date: '2024-01-17', status: 'completed' },
-      { id: 5, type: 'investment', amount: -200, description: 'Pay Later - R1000 package (20%)', date: '2024-01-16', status: 'completed' },
-      { id: 6, type: 'milestone', amount: 150, description: 'Tier B milestone reward', date: '2024-01-15', status: 'completed' }
-    ]
-  };
 
   const handleWithdraw = () => {
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
@@ -53,7 +38,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
       return;
     }
     
-    if (parseFloat(withdrawAmount) > walletData.balance) {
+    if (parseFloat(withdrawAmount) > (walletData?.balance || 0)) {
       toast.error('Insufficient balance');
       return;
     }
@@ -62,6 +47,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
     toast.success(`Withdrawal of R${withdrawAmount} initiated successfully!`);
     setShowWithdrawModal(false);
     setWithdrawAmount('');
+    onTransactionComplete();
   };
 
   const getTransactionIcon = (type: string) => {
@@ -92,6 +78,12 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
     }
   };
 
+  // Use real wallet data or defaults
+  const balance = walletData ? (walletData.balance / 100) : 0;
+  const points = walletData ? walletData.points : 0;
+  const pointsValue = points * 20; // 1 point = R20
+  const transactions = walletData?.transactions || [];
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -108,7 +100,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100">Available Balance</p>
-                <p className="text-2xl font-bold">R{walletData.balance.toFixed(2)}</p>
+                <p className="text-2xl font-bold">R{balance.toFixed(2)}</p>
               </div>
               <Wallet className="h-8 w-8 text-green-100" />
             </div>
@@ -120,11 +112,11 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100">Points</p>
-                <p className="text-2xl font-bold">{walletData.points}</p>
+                <p className="text-2xl font-bold">{points}</p>
               </div>
               <Target className="h-8 w-8 text-purple-100" />
             </div>
-            <p className="text-sm text-purple-100 mt-2">≈ R{walletData.pointsValue}</p>
+            <p className="text-sm text-purple-100 mt-2">≈ R{pointsValue}</p>
           </CardContent>
         </Card>
 
@@ -133,7 +125,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100">Pending</p>
-                <p className="text-2xl font-bold">R{walletData.pendingWithdrawals}</p>
+                <p className="text-2xl font-bold">R0</p>
               </div>
               <Download className="h-8 w-8 text-blue-100" />
             </div>
@@ -146,7 +138,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100">Total Withdrawn</p>
-                <p className="text-2xl font-bold">R{walletData.totalWithdrawn}</p>
+                <p className="text-2xl font-bold">R0</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-100" />
             </div>
@@ -194,29 +186,33 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {walletData.transactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getTransactionIcon(transaction.type)}
-                  <div>
-                    <p className="font-semibold">{transaction.description}</p>
-                    <p className="text-sm text-gray-600 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {transaction.date}
+            {transactions.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">No transactions yet. Start investing to see your transaction history!</p>
+            ) : (
+              transactions.map((transaction: any) => (
+                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getTransactionIcon(transaction.type)}
+                    <div>
+                      <p className="font-semibold">{transaction.description}</p>
+                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(transaction.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-semibold ${getTransactionColor(transaction.type)}`}>
+                      {transaction.amount > 0 ? '+' : ''}R{Math.abs(transaction.amount / 100).toFixed(2)}
                     </p>
+                    <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      {transaction.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${getTransactionColor(transaction.type)}`}>
-                    {transaction.amount > 0 ? '+' : ''}R{Math.abs(transaction.amount)}
-                  </p>
-                  <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    {transaction.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -234,7 +230,7 @@ export const WalletComponent = ({ userData }: WalletComponentProps) => {
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="font-semibold">Available Balance</p>
-              <p className="text-2xl font-bold text-blue-600">R{walletData.balance.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-blue-600">R{balance.toFixed(2)}</p>
             </div>
 
             <div className="space-y-2">
