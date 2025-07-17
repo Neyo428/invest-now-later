@@ -34,6 +34,17 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [walletData, setWalletData] = useState(null);
   const [investmentsData, setInvestmentsData] = useState([]);
+  const [userData, setUserData] = useState({
+    referralCode: '',
+    classAEarnings: 0,
+    classBEarnings: 0,
+    classCEarnings: 0,
+    milestoneProgress: {
+      classAReferrals: 0,
+      currentTier: 'A'
+    },
+    totalInvestments: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,12 +58,29 @@ const Index = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [wallet, investments] = await Promise.all([
+      const [wallet, investments, referralStats] = await Promise.all([
         apiClient.getWallet(),
-        apiClient.getUserInvestments()
+        apiClient.getUserInvestments(),
+        apiClient.getReferralStats().catch(() => ({ classA: 0, classB: 0, classC: 0, earnings: { classA: 0, classB: 0, classC: 0 } }))
       ]);
+      
       setWalletData(wallet);
       setInvestmentsData(investments);
+      
+      // Calculate total investments
+      const totalInvestments = investments.reduce((sum: number, inv: any) => sum + (inv.amount_invested || 0), 0) / 100;
+      
+      setUserData({
+        referralCode: user?.referralCode || '',
+        classAEarnings: referralStats.earnings?.classA || 0,
+        classBEarnings: referralStats.earnings?.classB || 0,
+        classCEarnings: referralStats.earnings?.classC || 0,
+        milestoneProgress: {
+          classAReferrals: referralStats.classA || 0,
+          currentTier: 'A'
+        },
+        totalInvestments
+      });
     } catch (error) {
       console.error('Failed to fetch user data:', error);
       toast.error('Failed to load user data');
@@ -303,15 +331,15 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="packages">
-            <InvestmentPackages />
+            <InvestmentPackages onInvestmentCreated={fetchUserData} />
           </TabsContent>
 
           <TabsContent value="referrals">
-            <ReferralSystem />
+            <ReferralSystem userData={userData} />
           </TabsContent>
 
           <TabsContent value="milestones">
-            <AffiliateMilestones />
+            <AffiliateMilestones userData={userData} />
           </TabsContent>
 
           <TabsContent value="wallet">
