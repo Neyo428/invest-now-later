@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 
+interface InvestmentPackagesProps {
+  onInvestmentCreated?: () => void;
+}
+
 const packages = [
   {
     id: 1,
@@ -67,7 +71,7 @@ const packages = [
   }
 ];
 
-export const InvestmentPackages = () => {
+export const InvestmentPackages = ({ onInvestmentCreated }: InvestmentPackagesProps) => {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [paymentType, setPaymentType] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -76,6 +80,13 @@ export const InvestmentPackages = () => {
     setSelectedPackage(pkg);
     setPaymentType(type);
     setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    if (onInvestmentCreated) {
+      onInvestmentCreated();
+    }
   };
 
   return (
@@ -167,6 +178,7 @@ export const InvestmentPackages = () => {
       <PaymentModal 
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
         package={selectedPackage}
         paymentType={paymentType}
       />
