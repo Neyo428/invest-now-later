@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,11 +21,12 @@ import { toast } from 'sonner';
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   package: any;
   paymentType: string;
 }
 
-export const PaymentModal = ({ isOpen, onClose, package: pkg, paymentType }: PaymentModalProps) => {
+export const PaymentModal = ({ isOpen, onClose, onSuccess, package: pkg, paymentType }: PaymentModalProps) => {
   const [paymentMethod, setPaymentMethod] = useState('bank');
   const [isProcessing, setIsProcessing] = useState(false);
   const [useWallet, setUseWallet] = useState(false);
@@ -46,7 +46,7 @@ export const PaymentModal = ({ isOpen, onClose, package: pkg, paymentType }: Pay
     setTimeout(() => {
       setIsProcessing(false);
       toast.success(`Investment of R${pkg.amount} initiated successfully!`);
-      onClose();
+      onSuccess();
     }, 2000);
   };
 
