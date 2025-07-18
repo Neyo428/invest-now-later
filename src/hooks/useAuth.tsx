@@ -27,24 +27,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      apiClient.setToken(token);
-      fetchProfile();
-    } else {
-      setIsLoading(false);
+      // Auto-login with mock user for demo purposes
+      setUser({
+        id: 1,
+        email: 'demo@test.com',
+        referralCode: 'INV-DEMO123',
+        createdAt: new Date().toISOString()
+      });
     }
+    setIsLoading(false);
   }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const userData = await apiClient.getProfile();
-      setUser(userData);
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-      localStorage.removeItem('authToken');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const login = async (email: string, password: string) => {
     try {
