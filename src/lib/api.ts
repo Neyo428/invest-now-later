@@ -239,7 +239,7 @@ class MockApiClient {
   }
 
   // Admin methods (mock data)
-  async get(endpoint: string) {
+  async get(endpoint: string): Promise<any> {
     await this.delay();
     
     if (endpoint.includes('/admin/users')) {

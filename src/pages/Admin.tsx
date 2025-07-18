@@ -47,12 +47,10 @@ const Admin = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const [usersData, investmentsData, transactionsData, statsData] = await Promise.all([
-        apiClient.get('/api/admin/users'),
-        apiClient.get('/api/admin/investments'),
-        apiClient.get('/api/admin/transactions'),
-        apiClient.get('/api/admin/stats')
-      ]);
+      const usersData = await apiClient.get('/api/admin/users');
+      const investmentsData = await apiClient.get('/api/admin/investments');
+      const transactionsData = await apiClient.get('/api/admin/transactions');
+      const statsData = await apiClient.get('/api/admin/stats');
       
       setUsers(usersData);
       setInvestments(investmentsData);
